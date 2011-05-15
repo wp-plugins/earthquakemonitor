@@ -17,7 +17,7 @@ This widget requires at least PHP 5.0 with SimpleXML enabled to work.
 == Installation ==
 
 
-1. Upload `EarthquakeMonitor.php` to the `/wp-content/plugins/` directory
+1. Upload the folder `EarthquakeMonitor` to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Add the widget to the sidebar. 
 4. Customize the widget.
