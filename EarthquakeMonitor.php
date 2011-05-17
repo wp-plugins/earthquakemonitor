@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Earthquakemonitor Widget
-Version: 1.1
+Version: 1.2
 Plugin URI: http://wordpress.org/extend/plugins/Earthquakemonitor
 Description: Earthquake Monitor is a customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 Author: Cris van Geel
@@ -46,6 +46,7 @@ class EarthQuakeMonitor extends WP_Widget {
 															'showupdateformat' => 'D H:i:s (T)', 
 															'lastupdatetxt' => 'Last update :', 
 															'customtitle' => '',
+															'filter' => '*',
 															'eqmcachetimer' => 3600,
 															'show' => 5, 
 															'trim' => 30, 
@@ -58,6 +59,7 @@ class EarthQuakeMonitor extends WP_Widget {
 		$showupdateformat = esc_attr($instance['showupdateformat']);
 		$lastupdatetxt = esc_attr($instance['lastupdatetxt']);
 		$customtitle = esc_attr($instance['customtitle']);
+		$filter = esc_attr($instance['filter']);
 		$trim = absint($instance['trim']);
 		$eqmcachetimer = absint($instance['eqmcachetimer']);
 		$feed = esc_attr($instance['feed']);
@@ -83,10 +85,15 @@ class EarthQuakeMonitor extends WP_Widget {
 		echo "</select></p>";
 
 		
-		/* Text for No Earthquakes */
+		/* Text for No Custom Title */
 		echo "<p><label for='" . $this->get_field_id('customtitle') ."'>". esc_html__('Title (leave empty for feed title)')."</label>";
 		echo "<input class='widefat' id='" . $this->get_field_id('customtitle') . "' name='" . $this->get_field_name('customtitle') . "' type='text' value='" . $customtitle . "' /></p>";
-				
+		
+		/* Filter */
+		echo "<p><label for='" . $this->get_field_id('filter') ."'>". esc_html__('Filter (i.e. \'Japan\' Leave empty for no filter)')."</label>";
+		echo "<input class='widefat' id='" . $this->get_field_id('filter') . "' name='" . $this->get_field_name('filter') . "' type='text' value='" . $filter . "' /></p>";
+		
+		
 		/* Text for No Earthquakes */
 		echo "<p><label for='" . $this->get_field_id('noearthquakes') ."'>". esc_html__('Text when no earthquakes')."</label>";
 		echo "<input class='widefat' id='" . $this->get_field_id('noearthquakes') . "' name='" . $this->get_field_name('noearthquakes') . "' type='text' value='" . $noearthquakes . "' /></p>";
@@ -155,6 +162,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			$instance['showupdateformat'] = trim ($new_instance['showupdateformat']);
 			$instance['lastupdatetxt'] = trim( strip_tags( stripslashes( $new_instance['lastupdatetxt'] ) ) );
 			$instance['customtitle'] = trim( strip_tags( stripslashes( $new_instance['customtitle'] ) ) );
+			$instance['filter'] = trim( strip_tags( stripslashes( $new_instance['filter'] ) ) );
 			$instance['show'] = absint($new_instance['show']);
 			$instance['trim'] = absint($new_instance['trim']);
 			$instance['eqmcachetimer'] = absint($new_instance['eqmcachetimer']);
@@ -187,7 +195,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			return;
 	}
 	
-	function retrievexml($feed,$cachetimer) {
+	function retrievexml($feed,$cachetimer,$myfilter) {
 	
 		if (time()- $cachetimer > filemtime('eqmdata')) {
 		
@@ -205,14 +213,20 @@ class EarthQuakeMonitor extends WP_Widget {
 	
 		
 		$tempXML = simplexml_load_string($stringXML);
-		return $tempXML;
+		$result = $tempXML->xpath("(//channel/item)[contains(., '".$myfilter."')]");
+
+		$this->lastupdate = $tempXML->channel->pubDate;
+		$this->maintitle = $tempXML->channel->title;
+		
+		return $result;
+		
 		}
 		
 	function widget($args, $instance) {
 	
 		extract( $args );	
 		
-		$objXML = $this->retrievexml($instance['feed'],absint($instance['eqmcachetimer']));
+		$arrayXML = $this->retrievexml($instance['feed'],absint($instance['eqmcachetimer']),$instance['filter']);
 
 		echo $before_widget;
 				
@@ -222,13 +236,13 @@ class EarthQuakeMonitor extends WP_Widget {
 					echo "{$before_title}".$instance["customtitle"]."{$after_title}";
 				}
 				else {
-					echo "{$before_title}{$objXML->channel->title}{$after_title}";
+					echo "{$before_title}".$this->maintitle."{$after_title}";
 				}	
 				
 			}
 		
 		echo "<ul>\n";		
-		$intCount = count($objXML->channel->item);
+		$intCount = count($arrayXML);
 		
 		if ($intCount == 0) {
 			echo "<li>".$instance['noearthquakes']."</li>";
@@ -243,7 +257,7 @@ class EarthQuakeMonitor extends WP_Widget {
 		
 		for ($i = 0; $i < $max; $i++) {
 		
-		$title = $objXML->channel->item[$i]->title;
+		$title = $arrayXML[$i]->title;
 			
 			if ($instance['trim'] > 0 and strlen($title) > $instance['trim'] ) 
 				{
@@ -260,7 +274,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			else 
 				{ $target = "_top"; };
 			
-			echo "<li><a target='{$target}' title='{$objXML->channel->item[$i]->description} {$objXML->channel->item[$i]->title} ' href='{$objXML->channel->item[$i]->link}'>{$title}</a></li>\n";
+			echo "<li><a target='{$target}' title='{$arrayXML[$i]->description} {$arrayXML[$i]->title} ' href='{$arrayXML[$i]->link}'>{$title}</a></li>\n";
 			}
 				
 		}
@@ -269,7 +283,7 @@ class EarthQuakeMonitor extends WP_Widget {
 		
 		if ($instance['showupdate']) {
 		
-			$tmp_date = strtotime($objXML->channel->pubDate);
+			$tmp_date = strtotime($this->lastupdate);
 			$date = date($instance['showupdateformat'],$tmp_date);
 			echo $instance['lastupdatetxt']." {$date}\n";
 		}

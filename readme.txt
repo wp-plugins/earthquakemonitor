@@ -1,10 +1,10 @@
 === Plugin Name ===
 Contributors: cmgeel
 Donate link: http://www.yellownote.nl/about/
-Tags: earthquake , monitor , widget
+Tags: monitor, earthquake, widget, geological
 Requires at least: 3.0
 Tested up to: 3.1.2
-Stable tag: 1.1
+Stable tag: 1.2
 
 Earthquake Monitor is a customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 
@@ -13,6 +13,9 @@ Earthquake Monitor is a customizable widget that shows an overview of earthquake
 
 Earthquake Monitor is a customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 This widget requires at least PHP 5.0 with SimpleXML enabled to work.
+
+This widget has a build in cache support and filter options.
+
 
 == Installation ==
 
@@ -24,7 +27,9 @@ This widget requires at least PHP 5.0 with SimpleXML enabled to work.
 
 == Frequently Asked Questions ==
 
-None yet
+* If the filter does not work keep in mind that you can only filter on 1 word. Also keep in mind that the filter is case sensitive.
+* Changing the feed is only effective when the cache timer is expired. Adjusting the cache timer to 1 second , refresh the page where the earthquake monitor is shown and restore the cache timer setting will work.
+
 
 == Screenshots ==
 
@@ -32,6 +37,11 @@ None yet
 2. Screenshot of the backend
 
 == Changelog ==
+
+= 1.2 =
+
+* Added a filter. NOw its possible to search only for earthquakes that have a certain word in the title.
+
 = 1.1 =
 
 * Added cache timer to cache the feed.
