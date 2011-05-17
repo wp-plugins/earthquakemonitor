@@ -46,7 +46,7 @@ class EarthQuakeMonitor extends WP_Widget {
 															'showupdateformat' => 'D H:i:s (T)', 
 															'lastupdatetxt' => 'Last update :', 
 															'customtitle' => '',
-															'filter' => '*',
+															'filter' => '',
 															'eqmcachetimer' => 3600,
 															'show' => 5, 
 															'trim' => 30, 
