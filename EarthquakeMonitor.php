@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Earthquakemonitor Widget
-Version: 1.2
+Version: 1.3
 Plugin URI: http://wordpress.org/extend/plugins/Earthquakemonitor
 Description: Earthquake Monitor is a customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 Author: Cris van Geel
@@ -32,7 +32,6 @@ class EarthQuakeMonitor extends WP_Widget {
     
     function EarthQuakeMonitor() {
 
-	
         $widget_ops = array('classname' => 'widget_earthquakemonitor', 'description' => __( 'Display earthquakes') );
 		parent::WP_Widget('earthquakemonitor', __('Earthquakemonitor'), $widget_ops);
 				
@@ -175,10 +174,27 @@ class EarthQuakeMonitor extends WP_Widget {
 		
 	}
 	
+
+	
+	
+	function checktempdirectory() {
+			if (!is_writeable(sys_get_temp_dir())) {
+				$out = '<div class="error" id="messages">';
+				$out .= '<p>The PHP Temp directory : '.realpath(sys_get_temp_dir()).' is not writeable. Please set correct permissions.</p>';
+				$out .= '</div>';
+				echo $out;
+			}
+			
+
+echo $temp_file;
+		}
+	
+	
+	
 	function checkphpversion() {
-			if(!version_compare(PHP_VERSION, '5.0.0', '>=')) {
+			if(!version_compare(PHP_VERSION, '5.2.1', '>=')) {
 			$out = '<div class="error" id="messages">';
-			$out .= '<p>Earthquakemonitor plugin requires PHP5 or higher. Your server is running '.phpversion().'.</p>';
+			$out .= '<p>Earthquakemonitor plugin requires PHP5.2.1 or higher. Your server is running '.phpversion().'.</p>';
 			$out .= '</div>';
 			echo $out;
 				}	
@@ -196,30 +212,36 @@ class EarthQuakeMonitor extends WP_Widget {
 	}
 	
 	function retrievexml($feed,$cachetimer,$myfilter) {
-	
-		if (time()- $cachetimer > filemtime('eqmdata')) {
+		
+		$filename = sys_get_temp_dir().'/eqmdata';
+		if (time()- $cachetimer > filemtime(sys_get_temp_dir()."/eqmdata")) {
 		
 			/* Refresh Cache */
 			
-			$stringXML = file_get_contents('http://earthquake.usgs.gov/earthquakes/catalogs/'.$feed.'.xml'); 
-			file_put_contents( 'eqmdata', $stringXML );
+			$stringXML = @file_get_contents('http://earthquake.usgs.gov/earthquakes/catalogs/'.$feed.'.xml'); 
+				if ($stringXML == FALSE) {
+					
+					//If there is an error grabbing the latest RSS Feed get the previous cached one..
+					$stringXML = @file_get_contents($filename);
+				}
+			@file_put_contents( $filename, $stringXML );
 		} 
 		else {
 		
 			/* Read from Cache */
-			$stringXML = file_get_contents('eqmdata');
-			
-		}
-	
-		
-		$tempXML = simplexml_load_string($stringXML);
-		$result = $tempXML->xpath("(//channel/item)[contains(., '".$myfilter."')]");
+			$stringXML = @file_get_contents($filename);
 
-		$this->lastupdate = $tempXML->channel->pubDate;
-		$this->maintitle = $tempXML->channel->title;
+			}
+
+		$tempXML = @simplexml_load_string($stringXML);
 		
-		return $result;
-		
+			if (!$tempXML == false) { 
+				$result = $tempXML->xpath("(//channel/item)[contains(., '".$myfilter."')]");
+				$this->lastupdate = $tempXML->channel->pubDate;
+				$this->maintitle = $tempXML->channel->title;
+				return $result;
+			}
+			else { 	return FALSE;}
 		}
 		
 	function widget($args, $instance) {
@@ -228,74 +250,84 @@ class EarthQuakeMonitor extends WP_Widget {
 		
 		$arrayXML = $this->retrievexml($instance['feed'],absint($instance['eqmcachetimer']),$instance['filter']);
 
-		echo $before_widget;
+		if (!$arrayXML == FALSE) {
+			
+			echo $before_widget;
+					
+			if ($instance['showtitle']) 
+				{
+					if ($instance['customtitle'] <> '') {
+						echo "{$before_title}".$instance["customtitle"]."{$after_title}";
+					}
+					else {
+						echo "{$before_title}".$this->maintitle."{$after_title}";
+					}	
+					
+				}
+			
+			echo "<ul>\n";		
+			$intCount = count($arrayXML);
+			
+			if ($intCount == 0) {
+				echo "<li>".$instance['noearthquakes']."</li>";
+			}
+			
+			if ($intCount > 0 and $intCount > absint($instance['show']) && absint($instance['show']) <> 0) 
+				{ $max = absint($instance['show']); } 
+			else 
+				{
+				  $max = $intCount;
+				}
+			
+			for ($i = 0; $i < $max; $i++) {
+			
+			$title = $arrayXML[$i]->title;
 				
-		if ($instance['showtitle']) 
-			{
-				if ($instance['customtitle'] <> '') {
-					echo "{$before_title}".$instance["customtitle"]."{$after_title}";
+				if ($instance['trim'] > 0 and strlen($title) > $instance['trim'] ) 
+					{
+					  $title = substr($title,0,$instance['trim'])."..";
+					}
+				
+				if (!$instance['linkable']) {
+					echo "<li>{$title}</li>\n";
 				}
 				else {
-					echo "{$before_title}".$this->maintitle."{$after_title}";
-				}	
 				
-			}
-		
-		echo "<ul>\n";		
-		$intCount = count($arrayXML);
-		
-		if ($intCount == 0) {
-			echo "<li>".$instance['noearthquakes']."</li>";
-		}
-		
-		if ($intCount > 0 and $intCount > absint($instance['show']) && absint($instance['show']) <> 0) 
-			{ $max = absint($instance['show']); } 
-		else 
-			{
-			  $max = $intCount;
-			}
-		
-		for ($i = 0; $i < $max; $i++) {
-		
-		$title = $arrayXML[$i]->title;
-			
-			if ($instance['trim'] > 0 and strlen($title) > $instance['trim'] ) 
-				{
-				  $title = substr($title,0,$instance['trim'])."..";
+				if ($instance['newwindow']) 
+					{ $target = "_blank"; } 
+				else 
+					{ $target = "_top"; };
+				
+				echo "<li><a target='{$target}' title='{$arrayXML[$i]->description} {$arrayXML[$i]->title} ' href='{$arrayXML[$i]->link}'>{$title}</a></li>\n";
 				}
-			
-			if (!$instance['linkable']) {
-				echo "<li>{$title}</li>\n";
+					
 			}
-			else {
 			
-			if ($instance['newwindow']) 
-				{ $target = "_blank"; } 
-			else 
-				{ $target = "_top"; };
+			echo "</ul>";
 			
-			echo "<li><a target='{$target}' title='{$arrayXML[$i]->description} {$arrayXML[$i]->title} ' href='{$arrayXML[$i]->link}'>{$title}</a></li>\n";
+			if ($instance['showupdate']) {
+			
+				$tmp_date = strtotime($this->lastupdate);
+				$date = date($instance['showupdateformat'],$tmp_date);
+				echo $instance['lastupdatetxt']." {$date}\n";
 			}
-				
+			
+			echo $after_widget;
+		} 
+		
+		else 
+		{ 
+			echo "Feed error in Earthquakedata"; 
 		}
 		
-		echo "</ul>";
 		
-		if ($instance['showupdate']) {
-		
-			$tmp_date = strtotime($this->lastupdate);
-			$date = date($instance['showupdateformat'],$tmp_date);
-			echo $instance['lastupdatetxt']." {$date}\n";
-		}
-		
-		echo $after_widget;
-	
 	}
 }
 
 
 add_action('admin_notices', array('earthquakemonitor','checkphpversion'));
 add_action('admin_notices', array('earthquakemonitor','checksimplexml'));
+add_action('admin_notices', array('earthquakemonitor','checktempdirectory'));
 add_action( 'widgets_init', 'wickett_earthquakemonitor_widget_init' );
 
 	function wickett_earthquakemonitor_widget_init() {

@@ -4,7 +4,7 @@ Donate link: http://www.yellownote.nl/about/
 Tags: monitor, earthquake, widget, geological
 Requires at least: 3.0
 Tested up to: 3.1.2
-Stable tag: 1.2
+Stable tag: 1.3
 
 Earthquake Monitor is a customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 
@@ -38,6 +38,12 @@ This widget has a build in cache support and filter options.
 
 == Changelog ==
 
+= 1.3 =
+
+* Bug fix : File were not stored at tmp directory.
+* Better error handling when RSS file failed to read / refresh
+* Build in check if tmp folder is writeable (This application makes use of the tmp folder)
+
 = 1.2 =
 
 * Added a filter. NOw its possible to search only for earthquakes that have a certain word in the title.
@@ -51,4 +57,7 @@ This widget has a build in cache support and filter options.
 
 * Initial Release
 
+== Upgrade Notice ==
+
+Fixes a bug with tmp directory. You must have at least PHP 5.2.1 or higher to use v1.3 of this plugin.
 	
