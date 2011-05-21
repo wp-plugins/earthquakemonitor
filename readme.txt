@@ -51,7 +51,7 @@ This widget has a build in cache support and filter options.
 = 1.1 =
 
 * Added cache timer to cache the feed.
-* Minor bug fixes
+* Minor bug fixes.
 
 = 1.0 =
 
