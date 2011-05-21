@@ -213,8 +213,8 @@ echo $temp_file;
 	
 	function retrievexml($feed,$cachetimer,$myfilter) {
 		
-		$filename = sys_get_temp_dir().'/eqmdata';
-		if (time()- $cachetimer > filemtime(sys_get_temp_dir()."/eqmdata")) {
+		$filename = sys_get_temp_dir().'/'.$feed;
+		if (time()- $cachetimer > filemtime(sys_get_temp_dir()."/".$feed)) {
 		
 			/* Refresh Cache */
 			
