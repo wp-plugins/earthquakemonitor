@@ -1,15 +1,15 @@
 <?php
 /*
 Plugin Name: Earthquakemonitor Widget
-Version: 1.3
+Version: 1.4
 Plugin URI: http://wordpress.org/extend/plugins/Earthquakemonitor
-Description: Earthquake Monitor is a customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
-Author: Cris van Geel
+Description: Earthquake Monitor is a very customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
+Author: <a href="http://www.yellownote.nl">Cris van Geel</a>
 Author URI: http://www.yellownote.nl
 License: GNU General Public License, version 2
 */
 
-/*  Copyright 2011  Cris van Geel  (email : cm.v.geel@gmail.com)
+/*  Copyright 2011  Cris van Geel  (email : cm [dot] v [dot] geel [at] gmail [dot] com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License, version 2, as 
@@ -43,12 +43,13 @@ class EarthQuakeMonitor extends WP_Widget {
 		$instance = wp_parse_args( (array) $instance, array('feed' => 'eqs7day-M2.5', 
 															'noearthquakes' => 'No Earthquakes', 
 															'showupdateformat' => 'D H:i:s (T)', 
+															'displayformat' => '{mag},{loc}', 
 															'lastupdatetxt' => 'Last update :', 
 															'customtitle' => '',
 															'filter' => '',
 															'eqmcachetimer' => 3600,
 															'show' => 5, 
-															'trim' => 30, 
+															'trim' => 24, 
 															'showtitle' => true , 
 															'linkable' => true , 
 															'newwindow' => true , 
@@ -66,6 +67,7 @@ class EarthQuakeMonitor extends WP_Widget {
 		$linkable = (bool) $instance['linkable'];
 		$newwindow = (bool) $instance['newwindow'];
 		$showupdate = (bool) $instance['showupdate'];
+		$displayformat = esc_attr($instance['displayformat']);
 
 		$show = absint($instance['show']);
 		if ( $show < 1 || 30 < $show ) { $show = 5; }
@@ -106,7 +108,7 @@ class EarthQuakeMonitor extends WP_Widget {
 		echo "<input class='widefat' id='" . $this->get_field_id('lastupdatetxt') . "' name='" . $this->get_field_name('lastupdatetxt') . "' type='text' value='" . $lastupdatetxt . "' /></p>";
 		
 		/* Trim count */
-		echo "<p><label for='" . $this->get_field_id('trim') ."'>". esc_html__('Trim at char count (0=no trim)')."</label>";
+		echo "<p><label for='" . $this->get_field_id('trim') ."'>". esc_html__('Trim location (0=no trim)')."</label>";
 		echo "<input class='widefat' id='" . $this->get_field_id('trim') . "' name='" . $this->get_field_name('trim') . "' type='text' value='" . $trim . "' /></p>";
 
 		/* Cache counter */
@@ -135,7 +137,7 @@ class EarthQuakeMonitor extends WP_Widget {
 		if ( $linkable ) {
 			echo ' checked="checked"';
 		}
-		echo " /> " . esc_html__('Make linkable') . "</label></p>";
+		echo " /> " . esc_html__('Make location linkable') . "</label></p>";
 	
 		/* New Window? */
 		echo "<p><label for='" . $this->get_field_id('newwindow') . "'><input id='" . $this->get_field_id('newwindow') . "' class='checkbox' type='checkbox' name='" . $this->get_field_name('newwindow') . "'";
@@ -150,7 +152,27 @@ class EarthQuakeMonitor extends WP_Widget {
 			echo ' checked="checked"';
 		}
 		echo " /> " . esc_html__('Show last update') . "</label></p>";
-
+		
+		
+		echo "<hr />";
+		echo "<h3>Usable variable</h3>";
+		echo "<ul>";
+		echo "<li>{loc} Earthquake location</li>";
+		echo "<li>{hrtime} Time past since quake</li>";
+		echo "<li>{time} Time of last quake</li>";
+		echo "<li>{mag} Magnitude</li>";
+		echo "<li>{lat} Latitude</li>";
+		echo "<li>{long} Longitude</li>";
+		echo "<li>{depth_m} Depth Metric units</li>";
+		echo "<li>{depth_i} Depth in Imperial units</li>";
+		echo "</ul>";
+		echo "<hr />";
+		
+		/* Display Format */
+		echo "<p><label for='" . $this->get_field_id('displayformat') ."'>". esc_html__('Display format')."</label>";
+		echo "<input class='widefat' id='" . $this->get_field_id('displayformat') . "' name='" . $this->get_field_name('displayformat') . "' type='text' value='" . $displayformat . "' size=2 /></p>";
+		
+		
 	}
 	
 	
@@ -169,6 +191,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			$instance['linkable'] = isset($new_instance['linkable']);
 			$instance['newwindow'] = isset($new_instance['newwindow']);
 			$instance['showupdate'] = $new_instance['showupdate'];
+			$instance['displayformat'] = trim( stripslashes( $new_instance['displayformat'] ) );
 			$instance['feed'] = $new_instance['feed'];
 			return $instance;
 		
@@ -186,7 +209,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			}
 			
 
-echo $temp_file;
+
 		}
 	
 	
@@ -214,7 +237,7 @@ echo $temp_file;
 	function retrievexml($feed,$cachetimer,$myfilter) {
 		
 		$filename = sys_get_temp_dir().'/'.$feed;
-		if (time()- $cachetimer > filemtime(sys_get_temp_dir()."/".$feed)) {
+		if (time()- $cachetimer > @filemtime(sys_get_temp_dir()."/".$feed)) {
 		
 			/* Refresh Cache */
 			
@@ -230,6 +253,7 @@ echo $temp_file;
 		
 			/* Read from Cache */
 			$stringXML = @file_get_contents($filename);
+			
 
 			}
 
@@ -281,25 +305,43 @@ echo $temp_file;
 			
 			for ($i = 0; $i < $max; $i++) {
 			
-			$title = $arrayXML[$i]->title;
-				
-				if ($instance['trim'] > 0 and strlen($title) > $instance['trim'] ) 
-					{
-					  $title = substr($title,0,$instance['trim'])."..";
-					}
-				
-				if (!$instance['linkable']) {
-					echo "<li>{$title}</li>\n";
+			
+			
+			/* Format display according display format */
+						
+			$loc = substr($arrayXML[$i]->title,6);
+		
+			if ($instance['trim'] > 0 and strlen($loc) > $instance['trim'] ) 
+				{
+				  $loc = substr($loc,0,$instance['trim'])."..";
 				}
-				else {
-				
-				if ($instance['newwindow']) 
-					{ $target = "_blank"; } 
-				else 
-					{ $target = "_top"; };
-				
-				echo "<li><a target='{$target}' title='{$arrayXML[$i]->description} {$arrayXML[$i]->title} ' href='{$arrayXML[$i]->link}'>{$title}</a></li>\n";
-				}
+			
+			$mag = substr($arrayXML[$i]->title,0,5);
+			$hrtime = human_time_diff(strtotime($arrayXML[$i]->pubDate) ,  current_time("timestamp"),$gmt = 0 );
+			$time = strtotime($arrayXML[$i]->pubDate);
+			$time = date($instance['showupdateformat'],$time);
+			$lat = $arrayXML[$i]->children("geo",true)->lat;
+			$long = $arrayXML[$i]->children("geo",true)->long;
+			$depth_m = $arrayXML[$i]->children("dc",true)->subject[2];
+			$depth_i = round(substr($depth_m,0,-2) * 0.621371192,1)." miles" ;
+			
+		
+			
+			if ($instance['newwindow']) 
+				{ $target = "_blank"; } 
+			else 
+				{ $target = "_top"; }
+			
+			if ($instance['linkable'])
+				{ $loc = "<a target='{$target}' title='{$arrayXML[$i]->description} {$arrayXML[$i]->title} ' href='{$arrayXML[$i]->link}'>{$loc}</a>"; }
+			
+			/* Parse user string */
+			$display = $instance['displayformat'];
+			$variable = array("{loc}","{mag}","{time}","{lat}","{long}","{lat}","{depth_m}","{depth_i}","{hrtime}");
+			$replace = array("{$loc}","{$mag}","{$time}","{$lat}","{$long}","{$lat}","{$depth_m}","{$depth_i}","{$hrtime}");
+			$parseddisplay = str_replace($variable, $replace, $display);
+			
+			echo "<li>".$parseddisplay."</li>";
 					
 			}
 			
