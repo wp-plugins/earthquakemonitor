@@ -1,6 +1,6 @@
 === Plugin Name ===
 Contributors: cmgeel
-Donate link: http://www.yellownote.nl/about/
+Donate link: http://www.yellownote.nl/blog/donate
 Tags: monitor, earthquake, widget, geological
 Requires at least: 3.0
 Tested up to: 3.8
