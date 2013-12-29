@@ -3,8 +3,10 @@ Contributors: cmgeel
 Donate link: http://www.yellownote.nl/about/
 Tags: monitor, earthquake, widget, geological
 Requires at least: 3.0
-Tested up to: 3.2.1
-Stable tag: 1.4
+Tested up to: 3.8
+Stable tag: 1.5
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Earthquake Monitor is a customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 
@@ -12,9 +14,9 @@ Earthquake Monitor is a customizable widget that shows an overview of earthquake
 
 
 Earthquake Monitor is a customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
-This widget requires at least PHP 5.0 with SimpleXML enabled to work.
+This widget requires at least PHP 5.2 with json_decode enabled to work.
 
-This widget has a build in cache support and filter options.
+This widget has a build in cache support.
 
 
 == Installation ==
@@ -27,8 +29,6 @@ This widget has a build in cache support and filter options.
 
 == Frequently Asked Questions ==
 
-* If the filter does not work keep in mind that you can only filter on 1 word. Also keep in mind that the filter is case sensitive.
-
 * Changing the feed is only effective when the cache timer is expired. Adjusting the cache timer to 1 second , refresh the page where the earthquake monitor is shown and restore the cache timer setting will work.
 
 
@@ -38,6 +38,14 @@ This widget has a build in cache support and filter options.
 2. Screenshot of the backend
 
 == Changelog ==
+
+= 1.5 =
+
+* Partly recoded the engine to be up2date with the new feed provided by USGS.
+* Removed the filter.
+* Removed the location Trim
+* Added a more detailed location summary (i.e. 32km N of Fishhook)
+
 
 = 1.4 =
 
@@ -81,13 +89,11 @@ Please read the Arbitrary section for more information about the new customizabl
 
 Some examples to show you how the template variables work
 
-Aprox. {hrtime} ago an earthquake with the {mag} struck {loc} (Time {time}) . The exact latitude = {lat} and the longitude = {long}. The quake was measured at {depth_m} depth.
+Aprox. {hrtime} ago an earthquake with the {mag} struck {locreg} (Time {time}) . The exact latitude = {lat} and the longitude = {long}. The quake was measured at {depth_m} km depth.
 
 would be parsed into 
 
 Aprox. 2 hours ago an earthquake with the M 0.4 struck Northern California (Time Thu 21:33:17 (UTC)) . The exact latitude = 38.8402 and the longitude = -122.8250. The quake was measured at 2.10 km depth.
-
-
 
 All earthquakes are placed in this HTML frame 
 

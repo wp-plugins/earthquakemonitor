@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Earthquakemonitor Widget
-Version: 1.4
+Version: 1.5
 Plugin URI: http://wordpress.org/extend/plugins/Earthquakemonitor
 Description: Earthquake Monitor is a very customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 Author: <a href="http://www.yellownote.nl">Cris van Geel</a>
@@ -9,7 +9,7 @@ Author URI: http://www.yellownote.nl
 License: GNU General Public License, version 2
 */
 
-/*  Copyright 2011  Cris van Geel  (email : cm [dot] v [dot] geel [at] gmail [dot] com)
+/*  Copyright 2011-2013  Cris van Geel  
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License, version 2, as 
@@ -40,16 +40,14 @@ class EarthQuakeMonitor extends WP_Widget {
 	
 	function form( $instance ) {
 		
-		$instance = wp_parse_args( (array) $instance, array('feed' => 'eqs7day-M2.5', 
+		$instance = wp_parse_args( (array) $instance, array('feed' => 'significant_month', 
 															'noearthquakes' => 'No Earthquakes', 
 															'showupdateformat' => 'D H:i:s (T)', 
-															'displayformat' => '{mag},{loc}', 
+															'displayformat' => 'M{mag} {locreg} {hrtime} ago', 
 															'lastupdatetxt' => 'Last update :', 
-															'customtitle' => '',
-															'filter' => '',
+															'customtitle' => 'Earthquakes',
 															'eqmcachetimer' => 3600,
 															'show' => 5, 
-															'trim' => 24, 
 															'showtitle' => true , 
 															'linkable' => true , 
 															'newwindow' => true , 
@@ -59,8 +57,6 @@ class EarthQuakeMonitor extends WP_Widget {
 		$showupdateformat = esc_attr($instance['showupdateformat']);
 		$lastupdatetxt = esc_attr($instance['lastupdatetxt']);
 		$customtitle = esc_attr($instance['customtitle']);
-		$filter = esc_attr($instance['filter']);
-		$trim = absint($instance['trim']);
 		$eqmcachetimer = absint($instance['eqmcachetimer']);
 		$feed = esc_attr($instance['feed']);
 		$showtitle = (bool) $instance['showtitle'];
@@ -75,26 +71,29 @@ class EarthQuakeMonitor extends WP_Widget {
 		/* Feed */
 		echo "<p><label for='". $this->get_field_id('feed') . "'>" . esc_html__('Earthquake Feed')."</label>";
 		echo "<select id='" . $this->get_field_id('feed') . "' name='" . $this->get_field_name('feed') . "'>";
-		$value = "eqs1hour-M0"; echo "<option value='{$value}'" . ( $feed == $value? "selected='selected'" : '' ) . ">Magnitude 0+ (Past hour)</option>";
-		$value = "eqs1hour-M1"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past hour)</option>";
-		$value = "eqs1day-M0"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 0+ (Past day))</option>";
-		$value = "eqs1day-M1"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past day)</option>";
-		$value = "eqs1day-M2.5"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past day)</option>";
-		$value = "eqs7day-M2.5"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past 7 days)</option>";
-		$value = "eqs7day-M5"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 5.0+ (Past 7 days)</option>";
-		$value = "eqs7day-M7"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 7+ (Past 7 days)</option>";
+		$value = "1.0_hour"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past hour)</option>";
+		$value = "2.5_hour"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past hour)</option>";
+		$value = "4.5_hour"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 4.5+ (Past hour)</option>";
+		$value = "significant_hour"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Significant Earthquakes (Past hour)</option>";
+		$value = "1.0_day"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past day)</option>";
+		$value = "2.5_day"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past day)</option>";
+		$value = "4.5_day"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 4.5+ (Past day)</option>";
+		$value = "significant_day"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Significant Earthquakes (Past day)</option>";
+		$value = "1.0_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past week)</option>";
+		$value = "2.5_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past week)</option>";
+		$value = "4.5_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 4.5+ (Past week)</option>";
+		$value = "significant_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Significant Earthquakes (Past week)</option>";
+		$value = "1.0_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past month)</option>";
+		$value = "2.5_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past month)</option>";
+		$value = "4.5_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 4.5+ (Past month)</option>";
+		$value = "significant_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Significant Earthquakes (Past month)</option>";
 		echo "</select></p>";
 
-		
+
 		/* Text for No Custom Title */
 		echo "<p><label for='" . $this->get_field_id('customtitle') ."'>". esc_html__('Title (leave empty for feed title)')."</label>";
 		echo "<input class='widefat' id='" . $this->get_field_id('customtitle') . "' name='" . $this->get_field_name('customtitle') . "' type='text' value='" . $customtitle . "' /></p>";
-		
-		/* Filter */
-		echo "<p><label for='" . $this->get_field_id('filter') ."'>". esc_html__('Filter (i.e. \'Japan\' Leave empty for no filter)')."</label>";
-		echo "<input class='widefat' id='" . $this->get_field_id('filter') . "' name='" . $this->get_field_name('filter') . "' type='text' value='" . $filter . "' /></p>";
-		
-		
+				
 		/* Text for No Earthquakes */
 		echo "<p><label for='" . $this->get_field_id('noearthquakes') ."'>". esc_html__('Text when no earthquakes')."</label>";
 		echo "<input class='widefat' id='" . $this->get_field_id('noearthquakes') . "' name='" . $this->get_field_name('noearthquakes') . "' type='text' value='" . $noearthquakes . "' /></p>";
@@ -107,17 +106,12 @@ class EarthQuakeMonitor extends WP_Widget {
 		echo "<p><label for='" . $this->get_field_id('lastupdatetxt') ."'>". esc_html__('Last update text')."</label>";
 		echo "<input class='widefat' id='" . $this->get_field_id('lastupdatetxt') . "' name='" . $this->get_field_name('lastupdatetxt') . "' type='text' value='" . $lastupdatetxt . "' /></p>";
 		
-		/* Trim count */
-		echo "<p><label for='" . $this->get_field_id('trim') ."'>". esc_html__('Trim location (0=no trim)')."</label>";
-		echo "<input class='widefat' id='" . $this->get_field_id('trim') . "' name='" . $this->get_field_name('trim') . "' type='text' value='" . $trim . "' /></p>";
-
 		/* Cache counter */
 		echo "<p><label for='" . $this->get_field_id('eqmcachetimer') ."'>". esc_html__('Cache feed (in seconds)')."</label>";
 		echo "<input class='widefat' id='" . $this->get_field_id('eqmcachetimer') . "' name='" . $this->get_field_name('eqmcachetimer') . "' type='text' value='" . $eqmcachetimer . "' /></p>";
-
 		
 		/* Earthquake count */
-		echo "<p><label for='". $this->get_field_id('show') . "'>" . esc_html__('Show earthquake count:')."</label>";
+		echo "<p><label for='". $this->get_field_id('show') . "'>" . esc_html__('No. of earthquakes:')."</label>";
 		echo "<select id='" . $this->get_field_id('show') . "' name='" . $this->get_field_name('show') . "'>";
 		
 		for ( $i = 1; $i <= 30; ++$i ) {
@@ -157,13 +151,14 @@ class EarthQuakeMonitor extends WP_Widget {
 		echo "<hr />";
 		echo "<h3>Usable variable</h3>";
 		echo "<ul>";
-		echo "<li>{loc} Earthquake location</li>";
+		echo "<li>{locdet} Location detailed</li>";
+		echo "<li>{locreg} Location region</li>";
 		echo "<li>{hrtime} Time past since quake</li>";
 		echo "<li>{time} Time of last quake</li>";
 		echo "<li>{mag} Magnitude</li>";
 		echo "<li>{lat} Latitude</li>";
 		echo "<li>{long} Longitude</li>";
-		echo "<li>{depth_m} Depth Metric units</li>";
+		echo "<li>{depth_m} Depth in Metric units</li>";
 		echo "<li>{depth_i} Depth in Imperial units</li>";
 		echo "</ul>";
 		echo "<hr />";
@@ -225,45 +220,47 @@ class EarthQuakeMonitor extends WP_Widget {
 	}
 	
 	function checksimplexml() {	
-		if(!function_exists('simplexml_load_file')) {
+		if(!function_exists('json_decode')) {
 				$out = '<div class="error" id="messages"><p>';
-				$out .= 'Earthquakemonitor plugin requires the PHP function <code>simplexml_load_file()</code>. Your server has this disabled. Please ask your hosting company to enable <code>simplexml_load_file</code>.';
+				$out .= 'Earthquakemonitor plugin requires the PHP function <code>json_decode()</code>.';
 				$out .= '</p></div>';
 				echo $out;
 			}
 			return;
 	}
 	
-	function retrievexml($feed,$cachetimer,$myfilter) {
+	function retrievejson($feed,$cachetimer,$myfilter) {
 		
 		$filename = sys_get_temp_dir().'/'.$feed;
 		if (time()- $cachetimer > @filemtime(sys_get_temp_dir()."/".$feed)) {
 		
 			/* Refresh Cache */
 			
-			$stringXML = @file_get_contents('http://earthquake.usgs.gov/earthquakes/catalogs/'.$feed.'.xml'); 
-				if ($stringXML == FALSE) {
+			$stringJSON = @file_get_contents('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/'.$feed.'.geojson'); 
+				if ($stringJSON == FALSE) {
 					
 					//If there is an error grabbing the latest RSS Feed get the previous cached one..
-					$stringXML = @file_get_contents($filename);
+					$stringJSON = @file_get_contents($filename);
 				}
-			@file_put_contents( $filename, $stringXML );
+			@file_put_contents( $filename, $stringJSON );
 		} 
 		else {
 		
 			/* Read from Cache */
-			$stringXML = @file_get_contents($filename);
+			$stringJSON = @file_get_contents($filename);
 			
 
 			}
 
-		$tempXML = @simplexml_load_string($stringXML);
+		$decodedJSON = json_decode($stringJSON);
 		
-			if (!$tempXML == false) { 
-				$result = $tempXML->xpath("(//channel/item)[contains(., '".$myfilter."')]");
-				$this->lastupdate = $tempXML->channel->pubDate;
-				$this->maintitle = $tempXML->channel->title;
-				return $result;
+			if (!$decodedJSON == false) { 
+			
+	
+				$this->lastupdate = ($decodedJSON->metadata->generated)/1000;
+				$this->maintitle = $decodedJSON->metadata->title;
+				return $decodedJSON;
+				
 			}
 			else { 	return FALSE;}
 		}
@@ -271,16 +268,16 @@ class EarthQuakeMonitor extends WP_Widget {
 	function widget($args, $instance) {
 	
 		extract( $args );	
-		
-		$arrayXML = $this->retrievexml($instance['feed'],absint($instance['eqmcachetimer']),$instance['filter']);
-
-		if (!$arrayXML == FALSE) {
+		$arrayJSON = $this->retrievejson($instance['feed'],absint($instance['eqmcachetimer']),$instance['filter']);
+	   	   
+		if (!$arrayJSON == FALSE) {
 			
 			echo $before_widget;
 					
 			if ($instance['showtitle']) 
 				{
 					if ($instance['customtitle'] <> '') {
+					
 						echo "{$before_title}".$instance["customtitle"]."{$after_title}";
 					}
 					else {
@@ -289,9 +286,10 @@ class EarthQuakeMonitor extends WP_Widget {
 					
 				}
 			
-			echo "<ul>\n";		
-			$intCount = count($arrayXML);
-			
+			echo "<ul>\n";	
+		
+			$intCount = $arrayJSON->metadata->count;
+				
 			if ($intCount == 0) {
 				echo "<li>".$instance['noearthquakes']."</li>";
 			}
@@ -304,26 +302,22 @@ class EarthQuakeMonitor extends WP_Widget {
 				}
 			
 			for ($i = 0; $i < $max; $i++) {
-			
-			
-			
+					
 			/* Format display according display format */
 						
-			$loc = substr($arrayXML[$i]->title,6);
-		
-			if ($instance['trim'] > 0 and strlen($loc) > $instance['trim'] ) 
-				{
-				  $loc = substr($loc,0,$instance['trim'])."..";
-				}
+			$loc_tmp = explode(",",$arrayJSON->features[$i]->properties->place);
+			$locdet = $loc_tmp[0]; 
+			$locreg = $loc_tmp[1];
 			
-			$mag = substr($arrayXML[$i]->title,0,5);
-			$hrtime = human_time_diff(strtotime($arrayXML[$i]->pubDate) ,  current_time("timestamp"),$gmt = 0 );
-			$time = strtotime($arrayXML[$i]->pubDate);
+			
+			$mag = $arrayJSON->features[$i]->properties->mag;
+			$hrtime = human_time_diff(($arrayJSON->features[$i]->properties->time)/1000,time());
+			$time = ($arrayJSON->features[$i]->properties->time)/1000;
 			$time = date($instance['showupdateformat'],$time);
-			$lat = $arrayXML[$i]->children("geo",true)->lat;
-			$long = $arrayXML[$i]->children("geo",true)->long;
-			$depth_m = $arrayXML[$i]->children("dc",true)->subject[2];
-			$depth_i = round(substr($depth_m,0,-2) * 0.621371192,1)." miles" ;
+			$lat = $arrayJSON->features[$i]->geometry->coordinates[1];
+			$long = $arrayJSON->features[$i]->geometry->coordinates[0];
+			$depth_m = ($arrayJSON->features[$i]->geometry->coordinates[2]);
+			$depth_i = round(substr($depth_m,0,-2) * 0.621371192,1);
 			
 		
 			
@@ -332,25 +326,25 @@ class EarthQuakeMonitor extends WP_Widget {
 			else 
 				{ $target = "_top"; }
 			
-			if ($instance['linkable'])
-				{ $loc = "<a target='{$target}' title='{$arrayXML[$i]->description} {$arrayXML[$i]->title} ' href='{$arrayXML[$i]->link}'>{$loc}</a>"; }
+
 			
 			/* Parse user string */
 			$display = $instance['displayformat'];
-			$variable = array("{loc}","{mag}","{time}","{lat}","{long}","{lat}","{depth_m}","{depth_i}","{hrtime}");
-			$replace = array("{$loc}","{$mag}","{$time}","{$lat}","{$long}","{$lat}","{$depth_m}","{$depth_i}","{$hrtime}");
+			$variable = array("{locdet}","{locreg}","{mag}","{time}","{lat}","{long}","{lat}","{depth_m}","{depth_i}","{hrtime}");
+			$replace = array("{$locdet}","{$locreg}","{$mag}","{$time}","{$lat}","{$long}","{$lat}","{$depth_m}","{$depth_i}","{$hrtime}");
 			$parseddisplay = str_replace($variable, $replace, $display);
 			
-			echo "<li>".$parseddisplay."</li>";
+			if ($instance['linkable'])
+				{ echo "<li><a target='{$target}' title='{$arrayJSON->features[$i]->properties->title}' href='{$arrayJSON->features[$i]->properties->url}'>{$parseddisplay}</a></li>"; }
+			else {	echo "<li>".$parseddisplay."</li>"; }
 					
 			}
 			
 			echo "</ul>";
 			
 			if ($instance['showupdate']) {
-			
-				$tmp_date = strtotime($this->lastupdate);
-				$date = date($instance['showupdateformat'],$tmp_date);
+						
+				$date = date($instance['showupdateformat'],$this->lastupdate);
 				echo $instance['lastupdatetxt']." {$date}\n";
 			}
 			
@@ -359,7 +353,7 @@ class EarthQuakeMonitor extends WP_Widget {
 		
 		else 
 		{ 
-			echo "Feed error in Earthquakedata"; 
+			echo "Feed error in Earthquake-data!"; 
 		}
 		
 		
