@@ -3,8 +3,8 @@ Contributors: cmgeel
 Donate link: http://www.yellownote.nl/blog/donate
 Tags: monitor, earthquake, widget, geological
 Requires at least: 3.0
-Tested up to: 3.8
-Stable tag: 1.5
+Tested up to: 3.9
+Stable tag: 1.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,7 +30,7 @@ This widget has a build in cache support.
 == Frequently Asked Questions ==
 
 * Changing the feed is only effective when the cache timer is expired. Adjusting the cache timer to 1 second , refresh the page where the earthquake monitor is shown and restore the cache timer setting will work.
-
+* When applying a filter, keep in mind that it filters for city and region. So be so explicit as possible.
 
 == Screenshots ==
 
@@ -38,6 +38,12 @@ This widget has a build in cache support.
 2. Screenshot of the backend
 
 == Changelog ==
+
+= 1.6 =
+
+* Removed some old references.
+* Removed function warning (if warnings are enabled)
+* Added filter functionality.
 
 = 1.5 =
 

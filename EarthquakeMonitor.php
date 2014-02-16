@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Earthquakemonitor Widget
-Version: 1.5
+Version: 1.6
 Plugin URI: http://wordpress.org/extend/plugins/Earthquakemonitor
 Description: Earthquake Monitor is a very customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 Author: <a href="http://www.yellownote.nl">Cris van Geel</a>
@@ -9,7 +9,7 @@ Author URI: http://www.yellownote.nl
 License: GNU General Public License, version 2
 */
 
-/*  Copyright 2011-2013  Cris van Geel  
+/*  Copyright 2011-2014  Cris van Geel  
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License, version 2, as 
@@ -46,6 +46,7 @@ class EarthQuakeMonitor extends WP_Widget {
 															'displayformat' => 'M{mag} {locreg} {hrtime} ago', 
 															'lastupdatetxt' => 'Last update :', 
 															'customtitle' => 'Earthquakes',
+															'filter' => '',
 															'eqmcachetimer' => 3600,
 															'show' => 5, 
 															'showtitle' => true , 
@@ -57,6 +58,7 @@ class EarthQuakeMonitor extends WP_Widget {
 		$showupdateformat = esc_attr($instance['showupdateformat']);
 		$lastupdatetxt = esc_attr($instance['lastupdatetxt']);
 		$customtitle = esc_attr($instance['customtitle']);
+		$filter = esc_attr($instance['filter']);
 		$eqmcachetimer = absint($instance['eqmcachetimer']);
 		$feed = esc_attr($instance['feed']);
 		$showtitle = (bool) $instance['showtitle'];
@@ -101,6 +103,11 @@ class EarthQuakeMonitor extends WP_Widget {
 		/* Date Format */
 		echo "<p><label for='" . $this->get_field_id('showupdateformat') ."'>". esc_html__('Date format')."</label>";
 		echo "<input class='widefat' id='" . $this->get_field_id('showupdateformat') . "' name='" . $this->get_field_name('showupdateformat') . "' type='text' value='" . $showupdateformat . "' /></p>";
+		
+		/* Filter */
+		echo "<p><label for='" . $this->get_field_id('filter') ."'>". esc_html__('Filter')."</label>";
+		echo "<input class='widefat' id='" . $this->get_field_id('filter') . "' name='" . $this->get_field_name('filter') . "' type='text' value='" . $filter . "' /></p>";
+		
 		
 		/* Last update txt */
 		echo "<p><label for='" . $this->get_field_id('lastupdatetxt') ."'>". esc_html__('Last update text')."</label>";
@@ -219,7 +226,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			return;
 	}
 	
-	function checksimplexml() {	
+	function checkjson_decode() {	
 		if(!function_exists('json_decode')) {
 				$out = '<div class="error" id="messages"><p>';
 				$out .= 'Earthquakemonitor plugin requires the PHP function <code>json_decode()</code>.';
@@ -229,7 +236,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			return;
 	}
 	
-	function retrievejson($feed,$cachetimer,$myfilter) {
+	function retrievejson($feed,$cachetimer) {
 		
 		$filename = sys_get_temp_dir().'/'.$feed;
 		if (time()- $cachetimer > @filemtime(sys_get_temp_dir()."/".$feed)) {
@@ -268,7 +275,7 @@ class EarthQuakeMonitor extends WP_Widget {
 	function widget($args, $instance) {
 	
 		extract( $args );	
-		$arrayJSON = $this->retrievejson($instance['feed'],absint($instance['eqmcachetimer']),$instance['filter']);
+		$arrayJSON = $this->retrievejson($instance['feed'],absint($instance['eqmcachetimer']));
 	   	   
 		if (!$arrayJSON == FALSE) {
 			
@@ -289,6 +296,19 @@ class EarthQuakeMonitor extends WP_Widget {
 			echo "<ul>\n";	
 		
 			$intCount = $arrayJSON->metadata->count;
+			
+			
+
+			/* Filter results, if filter is enabled. */
+			if ($instance["filter"] <> '') {
+				$i = 0;
+				while ($i < $intCount) {
+						if (!preg_match('/'.$instance["filter"].'/i' ,$arrayJSON->features[$i]->properties->place)) { unset ($arrayJSON->features[$i]); }
+						$i++;
+				}
+				Sort($arrayJSON->features);
+				$intCount = count($arrayJSON->features);
+			}
 				
 			if ($intCount == 0) {
 				echo "<li>".$instance['noearthquakes']."</li>";
@@ -362,7 +382,7 @@ class EarthQuakeMonitor extends WP_Widget {
 
 
 add_action('admin_notices', array('earthquakemonitor','checkphpversion'));
-add_action('admin_notices', array('earthquakemonitor','checksimplexml'));
+add_action('admin_notices', array('earthquakemonitor','checkjson_decode'));
 add_action('admin_notices', array('earthquakemonitor','checktempdirectory'));
 add_action( 'widgets_init', 'wickett_earthquakemonitor_widget_init' );
 
