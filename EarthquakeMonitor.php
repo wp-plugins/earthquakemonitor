@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Earthquakemonitor Widget
-Version: 1.61
+Version: 1.62
 Plugin URI: http://wordpress.org/extend/plugins/Earthquakemonitor
 Description: Earthquake Monitor is a very customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 Author: <a href="http://www.yellownote.nl">Cris van Geel</a>
@@ -9,7 +9,7 @@ Author URI: http://www.yellownote.nl
 License: GNU General Public License, version 2
 */
 
-/*  Copyright 2011-2014  Cris van Geel  
+/*  Copyright 2011-2015  Cris van Geel  
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License, version 2, as 
@@ -24,12 +24,16 @@ License: GNU General Public License, version 2
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-
+defined( 'ABSPATH' ) or die( 'Direct access to this plugin is forbidden.' );
 
 
 class EarthQuakeMonitor extends WP_Widget {
 	
-    
+		function getpluginversion() {
+		$version = "v1.62";
+		return $version;
+	}
+	    
     function EarthQuakeMonitor() {
 
         $widget_ops = array('classname' => 'widget_earthquakemonitor', 'description' => __( 'Display earthquakes') );
@@ -54,6 +58,7 @@ class EarthQuakeMonitor extends WP_Widget {
 															'newwindow' => true , 
 															'showupdate' => true ));
 		
+		$earthquakemonitorversion = esc_attr($instance['noearthquakes']);
 		$noearthquakes = esc_attr($instance['noearthquakes']);
 		$showupdateformat = esc_attr($instance['showupdateformat']);
 		$lastupdatetxt = esc_attr($instance['lastupdatetxt']);
@@ -81,14 +86,14 @@ class EarthQuakeMonitor extends WP_Widget {
 		$value = "2.5_day"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past day)</option>";
 		$value = "4.5_day"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 4.5+ (Past day)</option>";
 		$value = "significant_day"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Significant Earthquakes (Past day)</option>";
-		$value = "1.0_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past week)</option>";
-		$value = "2.5_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past week)</option>";
-		$value = "4.5_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 4.5+ (Past week)</option>";
-		$value = "significant_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Significant Earthquakes (Past week)</option>";
-		$value = "1.0_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past month)</option>";
-		$value = "2.5_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past month)</option>";
-		$value = "4.5_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 4.5+ (Past month)</option>";
-		$value = "significant_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Significant Earthquakes (Past month)</option>";
+		$value = "1.0_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past 7 days)</option>";
+		$value = "2.5_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past 7 days)</option>";
+		$value = "4.5_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 4.5+ (Past 7 days)</option>";
+		$value = "significant_week"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Significant Earthquakes (Past 7 days)</option>";
+		$value = "1.0_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 1+ (Past 30 days)</option>";
+		$value = "2.5_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 2.5+ (Past 30 days)</option>";
+		$value = "4.5_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Magnitude 4.5+ (Past 30 days)</option>";
+		$value = "significant_month"; echo "<option value='{$value}'" . ( $feed == $value ? "selected='selected'" : '' ) . ">Significant Earthquakes (Past 30 days)</option>";
 		echo "</select></p>";
 
 
@@ -198,10 +203,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			return $instance;
 		
 	}
-	
-
-	
-	
+		
 	function checktempdirectory() {
 			if (!is_writeable(sys_get_temp_dir())) {
 				$out = '<div class="error" id="messages">';
@@ -213,9 +215,7 @@ class EarthQuakeMonitor extends WP_Widget {
 
 
 		}
-	
-	
-	
+		
 	function checkphpversion() {
 			if(!version_compare(PHP_VERSION, '5.2.1', '>=')) {
 			$out = '<div class="error" id="messages">';
@@ -226,6 +226,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			return;
 	}
 	
+
 	function checkjson_decode() {	
 		if(!function_exists('json_decode')) {
 				$out = '<div class="error" id="messages"><p>';
@@ -279,6 +280,7 @@ class EarthQuakeMonitor extends WP_Widget {
 	   	   
 		if (!$arrayJSON == FALSE) {
 			
+			echo "\n<!-- Start EarthQuakeMonitor ".$this->getpluginversion()." -->\n";
 			echo $before_widget;
 					
 			if ($instance['showtitle']) 
@@ -355,12 +357,12 @@ class EarthQuakeMonitor extends WP_Widget {
 			$parseddisplay = str_replace($variable, $replace, $display);
 			
 			if ($instance['linkable'])
-				{ echo "<li><a target='{$target}' title='{$arrayJSON->features[$i]->properties->title}' href='{$arrayJSON->features[$i]->properties->url}'>{$parseddisplay}</a></li>"; }
-			else {	echo "<li>".$parseddisplay."</li>"; }
+				{ echo "<li><a target='{$target}' title='{$arrayJSON->features[$i]->properties->title}' href='{$arrayJSON->features[$i]->properties->url}'>{$parseddisplay}</a></li>\n"; }
+			else {	echo "<li>".$parseddisplay."</li>\n"; }
 					
 			}
 			
-			echo "</ul>";
+			echo "</ul>\n";
 			
 			if ($instance['showupdate']) {
 						
@@ -369,6 +371,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			}
 			
 			echo $after_widget;
+			echo "\n<!-- End EarthQuakeMonitor ".$this->getpluginversion()." -->\n";
 		} 
 		
 		else 

@@ -1,10 +1,10 @@
 === Plugin Name ===
-Contributors: cmgeel
+Contributors: crisvangeel
 Donate link: http://www.yellownote.nl/blog/donate
 Tags: monitor, earthquake, widget, geological
 Requires at least: 3.0
-Tested up to: 4.1
-Stable tag: 1.61
+Tested up to: 4.2.3
+Stable tag: 1.62
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,15 @@ This widget has a build in cache support.
 2. Screenshot of the backend
 
 == Changelog ==
+
+= 1.62 =
+
+* Tested for wordpress 4.2.3 
+* Minor text adjustments
+* Minor aesthetic improvements
+* Added banner
+* Minor security update
+
 
 = 1.61 =
 
