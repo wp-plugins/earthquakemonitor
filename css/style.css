@@ -1,0 +1,24 @@
+li.earthquake_red {
+list-style-type: square;
+color:red;
+}
+
+li.earthquake_orange {
+list-style-type: square;
+color:orange;
+}
+
+li.earthquake_yellow {
+list-style-type: square;
+color:yellow;
+}
+
+li.earthquake_green {
+list-style-type: square;
+color:green;
+}
+
+li.earthquake_unknown {
+list-style-type: square;
+color:grey;
+}

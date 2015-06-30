@@ -1,10 +1,10 @@
 <?php
 /*
 Plugin Name: Earthquakemonitor Widget
-Version: 1.62
+Version: 1.7
 Plugin URI: http://wordpress.org/extend/plugins/Earthquakemonitor
 Description: Earthquake Monitor is a very customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
-Author: <a href="http://www.yellownote.nl">Cris van Geel</a>
+Author: Cris van Geel
 Author URI: http://www.yellownote.nl
 License: GNU General Public License, version 2
 */
@@ -24,16 +24,54 @@ License: GNU General Public License, version 2
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-defined( 'ABSPATH' ) or die( 'Direct access to this plugin is forbidden.' );
+defined( 'ABSPATH' ) or die( 'No direct access allowed.' );
+register_activation_hook( __FILE__, 'earthquake_dbinstall' );
+
+global $earthquake_db_version;
+$earthquake_db_version = "1.0";
+
+global $earthquake_widget_version;
+$earthquake_widget_version = "v1.7";
+
+	function earthquake_css() {
+				wp_register_style( 'earthquakewidget_css', plugins_url('css/style.css', __FILE__) );
+				wp_enqueue_style( 'earthquakewidget_css' );
+			}
+             
+	function earthquake_showerror($error) {
+		
+				$out = '<div class="error" id="messages"><p>';
+				$out .= $error;
+				$out .= '</p></div>';
+				echo $out;
+	}
+
+/* Database Work , this replaces the usage of the local tmp folder so its more universal */
+function earthquake_dbinstall() {
+
+        global $wpdb;
+        global $earthquake_db_version;
+
+        $table_name = $wpdb->prefix.'earthquakewidget';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE `{$table_name}` ( `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `json` MEDIUMTEXT NOT NULL ) {$charset_collate};";
+        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+        dbDelta( $sql );
+        add_option( 'earthquake_db_version', $earthquake_db_version );
+}
+
+
+
 
 
 class EarthQuakeMonitor extends WP_Widget {
 	
-		function getpluginversion() {
-		$version = "v1.62";
-		return $version;
+
+	function earthquake_getpluginversion() {
+		return $earthquake_widget_version;
 	}
-	    
+
     function EarthQuakeMonitor() {
 
         $widget_ops = array('classname' => 'widget_earthquakemonitor', 'description' => __( 'Display earthquakes') );
@@ -45,17 +83,18 @@ class EarthQuakeMonitor extends WP_Widget {
 	function form( $instance ) {
 		
 		$instance = wp_parse_args( (array) $instance, array('feed' => 'significant_month', 
-															'noearthquakes' => 'No Earthquakes', 
+															'noearthquakes' => 'No earthquakes', 
 															'showupdateformat' => 'D H:i:s (T)', 
 															'displayformat' => 'M{mag} {locreg} {hrtime} ago', 
-															'lastupdatetxt' => 'Last update :', 
-															'customtitle' => 'Earthquakes',
+															'lastupdatetxt' => 'Updated on', 
+															'customtitle' => 'Latest earthquakes',
 															'filter' => '',
 															'eqmcachetimer' => 3600,
 															'show' => 5, 
 															'showtitle' => true , 
 															'linkable' => true , 
 															'newwindow' => true , 
+															'showalert'=> true,
 															'showupdate' => true ));
 		
 		$earthquakemonitorversion = esc_attr($instance['noearthquakes']);
@@ -70,6 +109,7 @@ class EarthQuakeMonitor extends WP_Widget {
 		$linkable = (bool) $instance['linkable'];
 		$newwindow = (bool) $instance['newwindow'];
 		$showupdate = (bool) $instance['showupdate'];
+		$showalert = (bool) $instance['showalert'];
 		$displayformat = esc_attr($instance['displayformat']);
 
 		$show = absint($instance['show']);
@@ -158,6 +198,15 @@ class EarthQuakeMonitor extends WP_Widget {
 			echo ' checked="checked"';
 		}
 		echo " /> " . esc_html__('Show last update') . "</label></p>";
+
+                /* Show PAGER Alert Color */
+                echo "<p><label for='" . $this->get_field_id('showalert') . "'><input id='" . $this->get_field_id('showalert') . "' class='checkbox' type='checkbox' name='" . $this->get_field_name('showalert') . "'";
+                if ( $showalert ) {
+                        echo ' checked="checked"';
+                }
+                echo " /> " . esc_html__('Show PAGER Alert Color') . "</label></p>";
+
+
 		
 		
 		echo "<hr />";
@@ -198,89 +247,94 @@ class EarthQuakeMonitor extends WP_Widget {
 			$instance['linkable'] = isset($new_instance['linkable']);
 			$instance['newwindow'] = isset($new_instance['newwindow']);
 			$instance['showupdate'] = $new_instance['showupdate'];
+			$instance['showalert'] = $new_instance['showalert'];
 			$instance['displayformat'] = trim( stripslashes( $new_instance['displayformat'] ) );
 			$instance['feed'] = $new_instance['feed'];
 			return $instance;
 		
 	}
 		
-	function checktempdirectory() {
-			if (!is_writeable(sys_get_temp_dir())) {
-				$out = '<div class="error" id="messages">';
-				$out .= '<p>The PHP Temp directory : '.realpath(sys_get_temp_dir()).' is not writeable. Please set correct permissions.</p>';
-				$out .= '</div>';
-				echo $out;
-			}
-			
 
-
-		}
 		
-	function checkphpversion() {
-			if(!version_compare(PHP_VERSION, '5.2.1', '>=')) {
-			$out = '<div class="error" id="messages">';
-			$out .= '<p>Earthquakemonitor plugin requires PHP5.2.1 or higher. Your server is running '.phpversion().'.</p>';
-			$out .= '</div>';
-			echo $out;
+	function earthquake_checkphpversion() {
+			if(!version_compare(PHP_VERSION, '5.3', '>=')) {
+			 earthquake_showerror('<p>Earthquakemonitor widget requires PHP5.3 or higher. Your server is running '.phpversion().'.</p>');
 				}	
 			return;
 	}
 	
 
-	function checkjson_decode() {	
+	function earthquake_checkjson_decode() {	
 		if(!function_exists('json_decode')) {
-				$out = '<div class="error" id="messages"><p>';
-				$out .= 'Earthquakemonitor plugin requires the PHP function <code>json_decode()</code>.';
-				$out .= '</p></div>';
-				echo $out;
+				earthquake_showerror('Earthquakemonitor plugin requires the PHP function <code>json_decode()</code>.');
+				
 			}
 			return;
 	}
 	
-	function retrievejson($feed,$cachetimer) {
+	function earthquake_trunkatecache() {
 		
-		$filename = sys_get_temp_dir().'/'.$feed;
-		if (time()- $cachetimer > @filemtime(sys_get_temp_dir()."/".$feed)) {
+		global $wpdb;
+		$table_name = $wpdb->prefix.'earthquakewidget';
+		$wpdb->query('TRUNCATE TABLE '.$table_name);	
 		
-			/* Refresh Cache */
-			
-			$stringJSON = @file_get_contents('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/'.$feed.'.geojson'); 
-				if ($stringJSON == FALSE) {
-					
-					//If there is an error grabbing the latest RSS Feed get the previous cached one..
-					$stringJSON = @file_get_contents($filename);
-				}
-			@file_put_contents( $filename, $stringJSON );
-		} 
-		else {
-		
-			/* Read from Cache */
-			$stringJSON = @file_get_contents($filename);
-			
+	}
 
-			}
-
-		$decodedJSON = json_decode($stringJSON);
-		
-			if (!$decodedJSON == false) { 
-			
 	
-				$this->lastupdate = ($decodedJSON->metadata->generated)/1000;
-				$this->maintitle = $decodedJSON->metadata->title;
-				return $decodedJSON;
+	function earthquake_json($feed,$cachetimer) {
+		
+		/* See if feed in cache is still valid */
+		global $wpdb;
+		$table_name = $wpdb->prefix.'earthquakewidget';
+		$sql = 'SELECT * FROM  '.$table_name.' WHERE timestamp > DATE_SUB(NOW(),INTERVAL '.$cachetimer.' SECOND)';
+		$resultset = $wpdb->get_results($sql);
+		
+			if (!$resultset[0]->json) {
 				
+				//Refresh Cache
+				$stringJSON = @file_get_contents('http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/'.$feed.'.geojson'); 
+				 
+				 				 
+				 //If the new feed is grabbed succesfully and valid truncate the old cache and renew cache.
+				 $decodedJSON = json_decode($stringJSON);
+				 
+		
+				if (!$decodedJSON == false) { 
+								 			
+					$this->earthquake_trunkatecache();				
+					$wpdb->query("INSERT INTO ".$table_name." (`timestamp`, `json`) VALUES (CURRENT_TIMESTAMP, '".addslashes($stringJSON)."');"); 
+
+				 }
+				
+				
+			} else {
+				//Read from Cache
+				$stringJSON = $resultset[0]->json;
+				$decodedJSON = json_decode($stringJSON);
 			}
-			else { 	return FALSE;}
-		}
+			
+			
+		
+			$this->lastupdate = ($decodedJSON->metadata->generated)/1000;
+			$this->maintitle = $decodedJSON->metadata->title;
+			return $decodedJSON;
+				
+			
+		
+			
+			
+	}
+
 		
 	function widget($args, $instance) {
 	
 		extract( $args );	
-		$arrayJSON = $this->retrievejson($instance['feed'],absint($instance['eqmcachetimer']));
+		
+		$arrayJSON = $this->earthquake_json($instance['feed'],absint($instance['eqmcachetimer']));
 	   	   
 		if (!$arrayJSON == FALSE) {
 			
-			echo "\n<!-- Start EarthQuakeMonitor ".$this->getpluginversion()." -->\n";
+			echo "\n<!-- Start EarthQuakeMonitor ".$this->earthquake_getpluginversion()." -->\n";
 			echo $before_widget;
 					
 			if ($instance['showtitle']) 
@@ -330,6 +384,9 @@ class EarthQuakeMonitor extends WP_Widget {
 			$loc_tmp = explode(",",$arrayJSON->features[$i]->properties->place);
 			$locdet = $loc_tmp[0]; 
 			$locreg = $loc_tmp[1];
+
+			if ($locreg == '') { $locreg = $locdet; }
+
 			
 			
 			$mag = $arrayJSON->features[$i]->properties->mag;
@@ -356,38 +413,52 @@ class EarthQuakeMonitor extends WP_Widget {
 			$replace = array("{$locdet}","{$locreg}","{$mag}","{$time}","{$lat}","{$long}","{$lat}","{$depth_m}","{$depth_i}","{$hrtime}");
 			$parseddisplay = str_replace($variable, $replace, $display);
 			
+			/* Prepare Pager Alert code if requested */
+			if ($instance['showalert']) {
+			$alertcolor = $arrayJSON->features[$i]->properties->alert;
+			if ($alertcolor == '') { $alertcolor='unknown'; }
+			$alert = " class='earthquake_".$alertcolor."'";
+			$alert_title = " (PAGER ".$alertcolor.")";
+			} else { 
+				$alert = "";
+				$alert_title = "";
+				}
+			
+				
 			if ($instance['linkable'])
-				{ echo "<li><a target='{$target}' title='{$arrayJSON->features[$i]->properties->title}' href='{$arrayJSON->features[$i]->properties->url}'>{$parseddisplay}</a></li>\n"; }
-			else {	echo "<li>".$parseddisplay."</li>\n"; }
+				{ echo "<li{$alert}><a target='{$target}' title='".htmlspecialchars($arrayJSON->features[$i]->properties->title,ENT_QUOTES)."{$alert_title}' href='{$arrayJSON->features[$i]->properties->url}'>{$parseddisplay}</a></li>\n"; }
+			else {	echo "<li{$alert}>".$parseddisplay."</li>\n"; }
 					
+			
 			}
+			
 			
 			echo "</ul>\n";
 			
 			if ($instance['showupdate']) {
 						
 				$date = date($instance['showupdateformat'],$this->lastupdate);
-				echo $instance['lastupdatetxt']." {$date}\n";
+				echo "<strong>".$instance['lastupdatetxt']." {$date}</strong>\n";
 			}
 			
 			echo $after_widget;
-			echo "\n<!-- End EarthQuakeMonitor ".$this->getpluginversion()." -->\n";
-		} 
-		
+			echo "\n<!-- End EarthQuakeMonitor ".$this->earthquake_getpluginversion()." -->\n";		
+		}
 		else 
 		{ 
-			echo "Feed error in Earthquake-data!"; 
+		  echo "\n<!-- EarthquakeMonitor : Error loading JSON Feed. -->\n";
+
 		}
 		
 		
 	}
 }
 
-
-add_action('admin_notices', array('earthquakemonitor','checkphpversion'));
-add_action('admin_notices', array('earthquakemonitor','checkjson_decode'));
-add_action('admin_notices', array('earthquakemonitor','checktempdirectory'));
-add_action( 'widgets_init', 'wickett_earthquakemonitor_widget_init' );
+add_action('updated_option', array('earthquakemonitor','earthquake_trunkatecache'));
+add_action('admin_notices', array('earthquakemonitor','earthquake_checkphpversion'));
+add_action('admin_notices', array('earthquakemonitor','earthquake_checkjson_decode'));
+add_action('widgets_init', 'wickett_earthquakemonitor_widget_init' );
+add_action('widgets_init', 'earthquake_css');
 
 	function wickett_earthquakemonitor_widget_init() {
 		register_widget('EarthQuakeMonitor');
