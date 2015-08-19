@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Earthquakemonitor Widget
-Version: 1.7
+Version: 1.71
 Plugin URI: http://wordpress.org/extend/plugins/Earthquakemonitor
 Description: Earthquake Monitor is a very customizable widget that shows an overview of earthquakes around the world from the U.S. Geological Surveys data. 
 Author: Cris van Geel
@@ -31,7 +31,9 @@ global $earthquake_db_version;
 $earthquake_db_version = "1.0";
 
 global $earthquake_widget_version;
-$earthquake_widget_version = "v1.7";
+$earthquake_widget_version = "v1.71";
+
+
 
 	function earthquake_css() {
 				wp_register_style( 'earthquakewidget_css', plugins_url('css/style.css', __FILE__) );
@@ -69,8 +71,10 @@ class EarthQuakeMonitor extends WP_Widget {
 	
 
 	function earthquake_getpluginversion() {
+		global $earthquake_widget_version;
 		return $earthquake_widget_version;
 	}
+
 
     function EarthQuakeMonitor() {
 
@@ -272,8 +276,7 @@ class EarthQuakeMonitor extends WP_Widget {
 			return;
 	}
 	
-	function earthquake_trunkatecache() {
-		
+	public static function earthquake_trunkatecache() {
 		global $wpdb;
 		$table_name = $wpdb->prefix.'earthquakewidget';
 		$wpdb->query('TRUNCATE TABLE '.$table_name);	
@@ -335,16 +338,16 @@ class EarthQuakeMonitor extends WP_Widget {
 		if (!$arrayJSON == FALSE) {
 			
 			echo "\n<!-- Start EarthQuakeMonitor ".$this->earthquake_getpluginversion()." -->\n";
-			echo $before_widget;
+			echo $before_widget."\n";
 					
 			if ($instance['showtitle']) 
 				{
 					if ($instance['customtitle'] <> '') {
 					
-						echo "{$before_title}".$instance["customtitle"]."{$after_title}";
+						echo "{$before_title}".$instance["customtitle"]."{$after_title}\n";
 					}
 					else {
-						echo "{$before_title}".$this->maintitle."{$after_title}";
+						echo "{$before_title}".$this->maintitle."{$after_title}\n";
 					}	
 					
 				}
